@@ -4,13 +4,14 @@
 package edge
 
 import (
-	"github.com/jchv/go-webview2/internal/w32"
-	"golang.org/x/sys/windows"
 	"log"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/leaanthony/go-webview2/internal/w32"
+	"golang.org/x/sys/windows"
 )
 
 type Chromium struct {
@@ -29,7 +30,8 @@ type Chromium struct {
 	environment *ICoreWebView2Environment
 
 	// Settings
-	Debug bool
+	Debug    bool
+	DataPath string
 
 	// permissions
 	permissions      map[CoreWebView2PermissionKind]CoreWebView2PermissionState
@@ -69,14 +71,19 @@ func NewChromium() *Chromium {
 
 func (e *Chromium) Embed(hwnd uintptr) bool {
 	e.hwnd = hwnd
-	currentExePath := make([]uint16, windows.MAX_PATH)
-	_, err := windows.GetModuleFileName(windows.Handle(0), &currentExePath[0], windows.MAX_PATH)
-	if err != nil {
-		// What to do here?
-		return false
+
+	dataPath := e.DataPath
+	if dataPath == "" {
+		currentExePath := make([]uint16, windows.MAX_PATH)
+		_, err := windows.GetModuleFileName(windows.Handle(0), &currentExePath[0], windows.MAX_PATH)
+		if err != nil {
+			// What to do here?
+			return false
+		}
+		currentExeName := filepath.Base(windows.UTF16ToString(currentExePath))
+		dataPath = filepath.Join(os.Getenv("AppData"), currentExeName)
 	}
-	currentExeName := filepath.Base(windows.UTF16ToString(currentExePath))
-	dataPath := filepath.Join(os.Getenv("AppData"), currentExeName)
+
 	res, err := createCoreWebView2EnvironmentWithOptions(nil, windows.StringToUTF16Ptr(dataPath), 0, e.envCompleted)
 	if err != nil {
 		log.Printf("Error calling Webview2Loader: %v", err)
@@ -161,7 +168,6 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 	}
 	env.vtbl.AddRef.Call(uintptr(unsafe.Pointer(env)))
 	e.environment = env
-
 	env.vtbl.CreateCoreWebView2Controller.Call(
 		uintptr(unsafe.Pointer(env)),
 		e.hwnd,
@@ -266,6 +272,8 @@ func (e *Chromium) WebResourceRequested(sender *ICoreWebView2, args *ICoreWebVie
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer req.Release()
+
 	if e.WebResourceRequestedCallback != nil {
 		e.WebResourceRequestedCallback(req, args)
 	}
@@ -333,4 +341,11 @@ func (e *Chromium) NotifyParentWindowPositionChanged() error {
 		return nil
 	}
 	return e.controller.NotifyParentWindowPositionChanged()
+}
+
+func (e *Chromium) Focus() {
+	err := e.controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

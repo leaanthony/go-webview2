@@ -1,8 +1,9 @@
 package edge
 
 import (
-	"golang.org/x/sys/windows"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 type _ICoreWebView2WebResourceRequestVtbl struct {
@@ -38,4 +39,8 @@ func (i *ICoreWebView2WebResourceRequest) GetUri() (string, error) {
 	uri := windows.UTF16PtrToString(_uri)
 	windows.CoTaskMemFree(unsafe.Pointer(_uri))
 	return uri, nil
+}
+
+func (i *ICoreWebView2WebResourceRequest) Release() error {
+	return i.vtbl.CallRelease(unsafe.Pointer(i))
 }

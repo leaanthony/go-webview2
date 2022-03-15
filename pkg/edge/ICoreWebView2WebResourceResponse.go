@@ -1,5 +1,7 @@
 package edge
 
+import "unsafe"
+
 type _ICoreWebView2WebResourceResponseVtbl struct {
 	_IUnknownVtbl
 	GetContent      ComProc
@@ -17,4 +19,8 @@ type ICoreWebView2WebResourceResponse struct {
 
 func (i *ICoreWebView2WebResourceResponse) AddRef() uintptr {
 	return i.AddRef()
+}
+
+func (i *ICoreWebView2WebResourceResponse) Release() error {
+	return i.vtbl.CallRelease(unsafe.Pointer(i))
 }
