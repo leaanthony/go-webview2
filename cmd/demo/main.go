@@ -2,8 +2,6 @@ package main
 
 import (
 	"log"
-
-	"github.com/leaanthony/go-webview2"
 )
 
 func main() {

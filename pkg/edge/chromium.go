@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/leaanthony/go-webview2/internal/w32"
+	"github.com/jcvh/go-webview2/internal/w32"
 	"golang.org/x/sys/windows"
 )
 
